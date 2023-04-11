@@ -16,7 +16,7 @@ fn main() {
     thread::spawn(move || {
         for i in 0..10 {
             client
-                .publish("demo/mqtt", QoS::AtLeastOnce, false, vec![i; i as usize])
+                .publish("hello/world", QoS::AtLeastOnce, false, vec![i; i as usize])
                 .unwrap();
             thread::sleep(Duration::from_millis(100));
         }
