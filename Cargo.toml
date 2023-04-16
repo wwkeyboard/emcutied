@@ -2,4 +2,5 @@
 members = [
   "server",
   "test-client",
+  "double-plugin",
 ]
