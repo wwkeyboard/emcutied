@@ -1,3 +1,4 @@
+use extism::{Context, Plugin};
 use rumqttd::{Broker, Config, Notification};
 
 use std::thread;
@@ -14,8 +15,7 @@ fn main() {
         .try_init()
         .expect("initialized subscriber succesfully");
 
-    // As examples are compiled as seperate binary so this config is current path dependent.
-    // Run it from root of this crate
+    // Config file is hardcoded to the current directory
     let config = config::Config::builder()
         .add_source(config::File::with_name("rumqttd.toml"))
         .build()
@@ -24,6 +24,11 @@ fn main() {
     let config: Config = config.try_deserialize().unwrap();
 
     dbg!(&config);
+
+    // load the plugin
+    let wasm = include_bytes!("code.wasm");
+    let context = Context::new();
+    let mut plugin = Plugin::new(&context, wasm, false).unwrap();
 
     let mut broker = Broker::new(config);
     let (mut link_tx, mut link_rx) = broker.link("singlenode").unwrap();

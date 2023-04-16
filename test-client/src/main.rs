@@ -11,7 +11,7 @@ fn main() {
     mqttoptions.set_keep_alive(Duration::from_secs(5));
 
     let (mut client, mut connection) = Client::new(mqttoptions, 10);
-    client.subscribe("demo/mqtt", QoS::AtMostOnce).unwrap();
+    // client.subscribe("demo/mqtt", QoS::AtMostOnce).unwrap();
 
     thread::spawn(move || {
         for i in 0..10 {
@@ -23,6 +23,20 @@ fn main() {
     });
 
     for (_i, message) in connection.iter().enumerate() {
-        println!("Message= {:?}", message);
+        match message {
+            Ok(msg) => {
+                match msg {
+                    rumqttc::Event::Incoming(inmsg) => {
+                        println!("got = {:?}", inmsg);
+                    }
+                    rumqttc::Event::Outgoing(_) => { // noop
+                    }
+                }
+            }
+            Err(e) => {
+                println!("ERROR => {:?}", e);
+                return;
+            }
+        }
     }
 }
