@@ -34,7 +34,7 @@ fn main() -> Result<()> {
 
     let config: Config = config.try_deserialize().unwrap();
 
-    dbg!(&config);
+    //    dbg!(&config);
 
     let mut broker = Broker::new(config);
     let (link_tx, link_rx) = broker.link("singlenode").unwrap();
