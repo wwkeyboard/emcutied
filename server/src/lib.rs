@@ -11,7 +11,7 @@ pub fn start_plugins(plugin_file: PathBuf, mut link_tx: LinkTx, mut link_rx: Lin
     // load the plugin
     let wasm = std::fs::read(plugin_file)?;
     let context = Context::new();
-    let functions = std::iter::empty::<&Function>();
+    let functions = std::iter::empty::<Function>();
     let mut _plugin = Plugin::new(&context, wasm, functions, false).unwrap();
 
     link_tx.subscribe("#").unwrap();
