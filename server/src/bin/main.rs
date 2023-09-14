@@ -24,7 +24,7 @@ fn main() -> Result<()> {
 
     builder
         .try_init()
-        .expect("initialized subscriber succesfully");
+        .expect("initialized subscriber successfully");
 
     // Config file is hardcoded to the current directory
     let config = config::Config::builder()
