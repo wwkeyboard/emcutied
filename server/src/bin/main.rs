@@ -49,6 +49,7 @@ fn main() -> Result<()> {
     });
 
     if let Some(plugin_filename) = args.plugin_file {
+        println!("Starting plugin: {plugin_filename:?}");
         start_plugins(plugin_filename, link_tx, link_rx)?;
     }
 

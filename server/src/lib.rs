@@ -12,7 +12,7 @@ pub fn start_plugins(plugin_file: PathBuf, mut link_tx: LinkTx, mut link_rx: Lin
     let wasm = std::fs::read(plugin_file)?;
     let context = Context::new();
     let functions = std::iter::empty::<Function>();
-    let mut _plugin = Plugin::new(&context, wasm, functions, false).unwrap();
+    let mut plugin = Plugin::new(&context, wasm, functions, false).unwrap();
 
     link_tx.subscribe("#").unwrap();
 
@@ -27,7 +27,7 @@ pub fn start_plugins(plugin_file: PathBuf, mut link_tx: LinkTx, mut link_rx: Lin
             Notification::Forward(forward) => {
                 count += 1;
                 println!(
-                    "Topic = {:?}, Count = {}, Payload = {} bytes",
+                    ">>> Topic = {:?}, Count = {}, Payload = {} bytes",
                     forward.publish.topic,
                     count,
                     forward.publish.payload.len()
