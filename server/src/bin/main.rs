@@ -1,6 +1,6 @@
 use anyhow::Result;
 use clap::Parser;
-use rumqttd::{Broker, Config};
+use rumqttd::{Broker, Config, Notification};
 use server::start_plugins;
 
 use std::{path::PathBuf, thread};
@@ -37,7 +37,12 @@ fn main() -> Result<()> {
     //    dbg!(&config);
 
     let mut broker = Broker::new(config);
-    let (link_tx, link_rx) = broker.link("singlenode").unwrap();
+    let (mut link_tx, mut link_rx) = broker.link("pluginnode").unwrap();
+
+    let (mut monitor_link_tx, mut monitor_link_rx) = broker.link("monitornode").unwrap();
+
+    link_tx.subscribe("#").unwrap();
+    monitor_link_tx.subscribe("#").unwrap();
 
     thread::spawn(move || {
         broker.start().unwrap();
@@ -46,5 +51,27 @@ fn main() -> Result<()> {
     if let Some(plugin_filename) = args.plugin_file {
         start_plugins(plugin_filename, link_tx, link_rx)?;
     }
-    Ok(())
+
+    let mut count = 0;
+    loop {
+        let notification = match monitor_link_rx.recv().unwrap() {
+            Some(v) => v,
+            None => continue,
+        };
+
+        match notification {
+            Notification::Forward(forward) => {
+                count += 1;
+                println!(
+                    "Topic = {:?}, Count = {}, Payload = {} bytes",
+                    forward.publish.topic,
+                    count,
+                    forward.publish.payload.len()
+                );
+            }
+            v => {
+                println!("{v:?}");
+            }
+        }
+    }
 }
