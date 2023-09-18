@@ -32,6 +32,7 @@ pub fn start_plugins(plugin_file: PathBuf, mut link_tx: LinkTx, mut link_rx: Lin
                     count,
                     forward.publish.payload.len()
                 );
+                plugin.call("")
             }
             v => {
                 println!("{v:?}");
