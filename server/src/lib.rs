@@ -1,25 +1,30 @@
 use std::path::PathBuf;
 
-use anyhow::Result;
-use extism::{Context, Plugin};
+use anyhow::{ Result};
+use extism::{Plugin};
 use rumqttd::{
     local::{LinkRx, LinkTx},
     Notification,
 };
 
-static mut CONTEXT: &Context = &Context::new();
+const PLUGIN_FUNCTION: &str = "handle";
 
-pub fn start_plugins(plugin_file: PathBuf, mut link_tx: LinkTx, mut link_rx: LinkRx) -> Result<()> {
-    // load the plugin
-    let wasm = std::fs::read(plugin_file)?;
 
-    link_tx.subscribe("#").unwrap();
+pub async fn start_plugin<'a>(
+    mut plugin: Plugin,
+    mut link_tx: LinkTx,
+    mut link_rx: LinkRx,
+    out_topic: String,
+) -> Result<()> {
+    println!("Starting plugin ---------------------");
+    link_tx.subscribe("doubler").unwrap();
 
     let mut count = 0;
+
     loop {
         let notification = match link_rx.recv().unwrap() {
             Some(v) => v,
-            None => continue,
+            None => return Ok(()),
         };
 
         match notification {
@@ -32,13 +37,16 @@ pub fn start_plugins(plugin_file: PathBuf, mut link_tx: LinkTx, mut link_rx: Lin
                     forward.publish.payload.len()
                 );
 
-                //let functions = std::iter::empty::<Function>();
-                let mut plugin = Plugin::new(CONTEXT, &wasm, [], false).unwrap();
-                let res = plugin.call("handle", forward.publish.payload)?;
-                link_tx.publish("response", res)?;
+                let payload:Vec<u8> = forward.publish.payload.to_vec();
+                let res:Vec<u8> = plugin.call(PLUGIN_FUNCTION, payload)?;
+
+                plugin.cancel_handle().cancel()?;
+
+                dbg!(&res);
+                let _ = link_tx.publish(out_topic.to_owned(), res);
             }
             v => {
-                println!("{v:?}");
+                println!("unknown plugin notification: {v:?}");
             }
         }
     }

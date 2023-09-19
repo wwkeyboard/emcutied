@@ -403,9 +403,9 @@ dependencies = [
 
 [[package]]
 name = "cbindgen"
-version = "0.24.5"
+version = "0.25.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4b922faaf31122819ec80c4047cc684c6979a087366c069611e33649bf98e18d"
+checksum = "faeaa693e5a727975a79211b8f35c0cb09b031fdb6eaa4a788bc6713d01488ca"
 dependencies = [
  "clap 3.2.25",
  "heck",
@@ -929,16 +929,39 @@ dependencies = [
 
 [[package]]
 name = "extism"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e0fcd6ad10f959f7f35680feda30bdcb7c1f6e0584e8358b09d735ff2c232f58"
+version = "1.0.0-alpha.0"
+source = "git+https://github.com/extism/extism.git#016e9158efe0fdf2737cbb66ee77aeaf879a7d10"
 dependencies = [
  "anyhow",
- "extism-manifest",
- "extism-runtime",
+ "cbindgen",
+ "extism-convert",
+ "extism-manifest 1.0.0-alpha.0",
+ "glob",
+ "libc",
  "log",
+ "log4rs",
+ "serde",
  "serde_json",
+ "sha2",
+ "toml 0.7.8",
+ "ureq",
+ "url",
  "uuid",
+ "wasmtime",
+ "wasmtime-wasi",
+]
+
+[[package]]
+name = "extism-convert"
+version = "0.1.0"
+source = "git+https://github.com/extism/extism.git#016e9158efe0fdf2737cbb66ee77aeaf879a7d10"
+dependencies = [
+ "anyhow",
+ "base64 0.21.4",
+ "prost",
+ "rmp-serde",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -952,6 +975,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "extism-manifest"
+version = "1.0.0-alpha.0"
+source = "git+https://github.com/extism/extism.git#016e9158efe0fdf2737cbb66ee77aeaf879a7d10"
+dependencies = [
+ "base64 0.21.4",
+ "serde",
+]
+
+[[package]]
 name = "extism-pdk"
 version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -959,7 +991,7 @@ checksum = "09c20fe9cafa572607e22192bf2040849e7456664895bdc589c89387876e2067"
 dependencies = [
  "anyhow",
  "base64 0.21.4",
- "extism-manifest",
+ "extism-manifest 0.5.0",
  "extism-pdk-derive",
  "rmp-serde",
  "serde",
@@ -975,30 +1007,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.33",
-]
-
-[[package]]
-name = "extism-runtime"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2be84fc8659ebaa268478a52f98e7066e4352fc7a90b74ec3aa52e7ac03eecd4"
-dependencies = [
- "anyhow",
- "cbindgen",
- "extism-manifest",
- "glob",
- "libc",
- "log",
- "log4rs",
- "serde",
- "serde_json",
- "sha2",
- "toml 0.7.8",
- "ureq",
- "url",
- "uuid",
- "wasmtime",
- "wasmtime-wasi",
 ]
 
 [[package]]
@@ -2077,6 +2085,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "prost"
+version = "0.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f4fdd22f3b9c31b53c060df4a0613a1c7f062d4115a2b984dd15b1858f7e340d"
+dependencies = [
+ "bytes",
+ "prost-derive",
+]
+
+[[package]]
+name = "prost-derive"
+version = "0.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "265baba7fabd416cf5078179f7d2cbeca4ce7a9041111900675ea7c4cb8a4c32"
+dependencies = [
+ "anyhow",
+ "itertools",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.33",
+]
+
+[[package]]
 name = "psm"
 version = "0.1.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2647,6 +2678,7 @@ dependencies = [
  "extism",
  "pretty_env_logger",
  "rumqttd",
+ "tokio",
  "tracing-subscriber",
 ]
 
@@ -2677,6 +2709,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7ccc8076840c4da029af4f87e4e8daeb0fca6b87bbb02e10cb60b791450e11e4"
 dependencies = [
  "dirs",
+]
+
+[[package]]
+name = "signal-hook-registry"
+version = "1.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d8229b473baa5980ac72ef434c4415e70c4b5e71b423043adb4ba059f89c99a1"
+dependencies = [
+ "libc",
 ]
 
 [[package]]
@@ -2950,7 +2991,10 @@ dependencies = [
  "bytes",
  "libc",
  "mio",
+ "num_cpus",
+ "parking_lot",
  "pin-project-lite",
+ "signal-hook-registry",
  "socket2 0.5.4",
  "tokio-macros",
  "windows-sys",

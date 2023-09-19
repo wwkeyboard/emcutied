@@ -1,7 +1,8 @@
 use anyhow::Result;
 use clap::Parser;
+use extism::Plugin;
 use rumqttd::{Broker, Config, Notification};
-use server::start_plugins;
+use server::start_plugin;
 
 use std::{path::PathBuf, thread};
 
@@ -12,7 +13,8 @@ struct Args {
     plugin_file: Option<PathBuf>,
 }
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     let args = Args::parse();
 
     let builder = tracing_subscriber::fmt()
@@ -41,7 +43,7 @@ fn main() -> Result<()> {
 
     let (mut monitor_link_tx, mut monitor_link_rx) = broker.link("monitornode").unwrap();
 
-    link_tx.subscribe("#").unwrap();
+//    link_tx.subscribe("#").unwrap();
     monitor_link_tx.subscribe("#").unwrap();
 
     thread::spawn(move || {
@@ -50,7 +52,9 @@ fn main() -> Result<()> {
 
     if let Some(plugin_filename) = args.plugin_file {
         println!("Starting plugin: {plugin_filename:?}");
-        start_plugins(plugin_filename, link_tx, link_rx)?;
+        let wasm = std::fs::read(plugin_filename.clone()).unwrap();
+        let plugin = Plugin::new(wasm, [], false).unwrap();
+        start_plugin(plugin, link_tx, link_rx, "result".to_owned()).await?;
     }
 
     let mut count = 0;
