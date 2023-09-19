@@ -1,18 +1,17 @@
 use std::path::PathBuf;
 
 use anyhow::Result;
-use extism::{Context, Function, Plugin};
+use extism::{Context, Plugin};
 use rumqttd::{
     local::{LinkRx, LinkTx},
     Notification,
 };
 
+static mut CONTEXT: &Context = &Context::new();
+
 pub fn start_plugins(plugin_file: PathBuf, mut link_tx: LinkTx, mut link_rx: LinkRx) -> Result<()> {
     // load the plugin
     let wasm = std::fs::read(plugin_file)?;
-    let context = Context::new();
-    let functions = std::iter::empty::<Function>();
-    let mut plugin = Plugin::new(&context, wasm, functions, false).unwrap();
 
     link_tx.subscribe("#").unwrap();
 
@@ -32,7 +31,11 @@ pub fn start_plugins(plugin_file: PathBuf, mut link_tx: LinkTx, mut link_rx: Lin
                     count,
                     forward.publish.payload.len()
                 );
-                plugin.call("", forward.publish.payload)
+
+                //let functions = std::iter::empty::<Function>();
+                let mut plugin = Plugin::new(CONTEXT, &wasm, [], false).unwrap();
+                let res = plugin.call("handle", forward.publish.payload)?;
+                link_tx.publish("response", res)?;
             }
             v => {
                 println!("{v:?}");

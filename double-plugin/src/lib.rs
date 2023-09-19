@@ -7,7 +7,7 @@ struct InData {
 }
 
 #[plugin_fn]
-pub fn handle(input: String) -> FnResult<String> {
+pub fn handle(input: String) -> FnResult< String> {
     run_handle(input)
 }
 
