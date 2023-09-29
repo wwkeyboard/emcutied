@@ -36,14 +36,12 @@ async fn main() -> Result<()> {
 
     let config: Config = config.try_deserialize().unwrap();
 
-    //    dbg!(&config);
-
     let mut broker = Broker::new(config);
-    let (mut link_tx, mut link_rx) = broker.link("pluginnode").unwrap();
+    let (mut link_tx, link_rx) = broker.link("pluginnode").unwrap();
 
     let (mut monitor_link_tx, mut monitor_link_rx) = broker.link("monitornode").unwrap();
 
-//    link_tx.subscribe("#").unwrap();
+    link_tx.subscribe("#").unwrap();
     monitor_link_tx.subscribe("#").unwrap();
 
     thread::spawn(move || {

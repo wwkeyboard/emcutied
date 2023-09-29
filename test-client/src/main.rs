@@ -11,16 +11,12 @@ fn main() {
     mqttoptions.set_keep_alive(Duration::from_secs(5));
 
     let (mut client, mut connection) = Client::new(mqttoptions, 10);
-    // client.subscribe("demo/mqtt", QoS::AtMostOnce).unwrap();
+    client.subscribe("doubler/#", QoS::AtMostOnce).unwrap();
 
-    thread::spawn(move || {
-        for i in 0..10 {
             client
-                .publish("hello/world", QoS::AtLeastOnce, false, vec![i; i as usize])
+                .publish("doubler/double", QoS::AtLeastOnce, false, r#"{"data": 2 }"#.as_bytes())
                 .unwrap();
             thread::sleep(Duration::from_millis(100));
-        }
-    });
 
     for (_i, message) in connection.iter().enumerate() {
         match message {
