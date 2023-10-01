@@ -1,6 +1,8 @@
 use anyhow::Result;
 use clap::Parser;
-use extism::Plugin;
+use extism::{Context, Plugin};
+use log::{info, warn};
+use pretty_env_logger;
 use rumqttd::{Broker, Config, Notification};
 use server::start_plugin;
 
@@ -17,16 +19,18 @@ struct Args {
 async fn main() -> Result<()> {
     let args = Args::parse();
 
-    let builder = tracing_subscriber::fmt()
-        .pretty()
-        .with_line_number(false)
-        .with_file(false)
-        .with_thread_ids(false)
-        .with_thread_names(false);
+    pretty_env_logger::init();
 
-    builder
-        .try_init()
-        .expect("initialized subscriber successfully");
+    // let builder = tracing_subscriber::fmt()
+    //     .pretty()
+    //     .with_line_number(false)
+    //     .with_file(false)
+    //     .with_thread_ids(false)
+    //     .with_thread_names(false);
+
+    // builder
+    //     .try_init()
+    //     .expect("initialized subscriber successfully");
 
     // Config file is hardcoded to the current directory
     let config = config::Config::builder()
@@ -36,22 +40,31 @@ async fn main() -> Result<()> {
 
     let config: Config = config.try_deserialize().unwrap();
 
+    info!("-- create new Broker");
     let mut broker = Broker::new(config);
+
+    info!("-- create broker link named 'pluginnode'");
     let (mut link_tx, link_rx) = broker.link("pluginnode").unwrap();
 
+    info!("-- create broker link named 'monitornode'");
     let (mut monitor_link_tx, mut monitor_link_rx) = broker.link("monitornode").unwrap();
 
+    info!("-- pluginnode subscribe to #");
     link_tx.subscribe("#").unwrap();
+    info!("-- monitornode subscribe to #");
     monitor_link_tx.subscribe("#").unwrap();
 
+    info!("-- start broker thread");
     thread::spawn(move || {
         broker.start().unwrap();
     });
 
+    info!("-- start plugins");
     if let Some(plugin_filename) = args.plugin_file {
-        println!("Starting plugin: {plugin_filename:?}");
+        info!("Starting plugin: {plugin_filename:?}");
         let wasm = std::fs::read(plugin_filename.clone()).unwrap();
-        let plugin = Plugin::new(wasm, [], false).unwrap();
+        let ctx = Context::new();
+        let plugin = Plugin::new(&ctx, wasm, [], false).unwrap();
         start_plugin(plugin, link_tx, link_rx, "result".to_owned()).await?;
     }
 
@@ -73,7 +86,7 @@ async fn main() -> Result<()> {
                 );
             }
             v => {
-                println!("{v:?}");
+                warn!("unknown message {v:?}");
             }
         }
     }

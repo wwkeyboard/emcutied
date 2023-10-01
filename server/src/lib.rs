@@ -1,7 +1,5 @@
-use std::path::PathBuf;
-
-use anyhow::{ Result};
-use extism::{Plugin};
+use anyhow::Result;
+use extism::Plugin;
 use rumqttd::{
     local::{LinkRx, LinkTx},
     Notification,
@@ -9,9 +7,8 @@ use rumqttd::{
 
 const PLUGIN_FUNCTION: &str = "handle";
 
-
 pub async fn start_plugin<'a>(
-    mut plugin: Plugin,
+    mut plugin: Plugin<'_>,
     mut link_tx: LinkTx,
     mut link_rx: LinkRx,
     out_topic: String,
@@ -37,10 +34,10 @@ pub async fn start_plugin<'a>(
                     forward.publish.payload.len()
                 );
 
-                let payload:Vec<u8> = forward.publish.payload.to_vec();
-                let res:Vec<u8> = plugin.call(PLUGIN_FUNCTION, payload)?;
+                let payload: Vec<u8> = forward.publish.payload.to_vec();
+                let res: Vec<u8> = plugin.call(PLUGIN_FUNCTION, payload)?.into();
 
-                plugin.cancel_handle().cancel()?;
+                plugin.cancel_handle().cancel();
 
                 dbg!(&res);
                 let _ = link_tx.publish(out_topic.to_owned(), res);
