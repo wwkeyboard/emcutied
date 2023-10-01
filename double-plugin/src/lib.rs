@@ -13,7 +13,8 @@ pub fn handle(input: String) -> FnResult< String> {
 
 fn run_handle(input: String) -> FnResult<String> {
     let data:InData = serde_json::from_str(&input).unwrap();
-    Ok((data.data * 2.0).to_string())
+    let response = (data.data * 2.0).to_string();
+    Ok(response)
 }
 
 #[cfg(test)]
