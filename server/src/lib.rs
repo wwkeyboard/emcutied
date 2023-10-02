@@ -1,5 +1,6 @@
 use anyhow::Result;
 use extism::Plugin;
+use log::{trace, debug, error, info};
 use rumqttd::{
     local::{LinkRx, LinkTx},
     Notification,
@@ -13,7 +14,7 @@ pub async fn start_plugin<'a>(
     mut link_rx: LinkRx,
     out_topic: String,
 ) -> Result<()> {
-    println!("Starting plugin ---------------------");
+    info!("Starting plugin ---------------------");
     link_tx.subscribe("doubler").unwrap();
 
     let mut count = 0;
@@ -27,7 +28,7 @@ pub async fn start_plugin<'a>(
         match notification {
             Notification::Forward(forward) => {
                 count += 1;
-                println!(
+                debug!(
                     ">>> Topic = {:?}, Count = {}, Payload = {} bytes",
                     forward.publish.topic,
                     count,
@@ -39,11 +40,11 @@ pub async fn start_plugin<'a>(
 
                 plugin.cancel_handle().cancel();
 
-                dbg!(&res);
-                let _ = link_tx.publish(out_topic.to_owned(), res);
+                trace!("-- result {:?}", &res);
+//                let _ = link_tx.publish(out_topic.to_owned(), res);
             }
             v => {
-                println!("unknown plugin notification: {v:?}");
+                error!("unknown plugin notification: {v:?}");
             }
         }
     }
