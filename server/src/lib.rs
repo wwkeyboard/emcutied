@@ -30,6 +30,7 @@ pub async fn start_plugin<'a>(
                 count += 1;
                 debug!(
                     ">>> Topic = {:?}, Count = {}, Payload = {} bytes",
+
                     forward.publish.topic,
                     count,
                     forward.publish.payload.len()

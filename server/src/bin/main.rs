@@ -13,6 +13,9 @@ use std::{path::PathBuf, thread};
 struct Args {
     #[arg(short, long)]
     plugin_file: Option<PathBuf>,
+
+    #[arg(short, long, default_value = "./rumqttd.toml")]
+    rumqttd_config: PathBuf,
 }
 
 #[tokio::main]
@@ -21,24 +24,15 @@ async fn main() -> Result<()> {
 
     pretty_env_logger::init();
 
-    // let builder = tracing_subscriber::fmt()
-    //     .pretty()
-    //     .with_line_number(false)
-    //     .with_file(false)
-    //     .with_thread_ids(false)
-    //     .with_thread_names(false);
-
-    // builder
-    //     .try_init()
-    //     .expect("initialized subscriber successfully");
+    let config_file = config::File::from(args.rumqttd_config);
 
     // Config file is hardcoded to the current directory
     let config = config::Config::builder()
-        .add_source(config::File::with_name("rumqttd.toml"))
+        .add_source(config_file)
         .build()
-        .unwrap();
-
-    let config: Config = config.try_deserialize().unwrap();
+        .expect("couldn't open rumqttd config file")
+        .try_deserialize()
+        .expect("couldn't parse rumqttd config file");
 
     info!("-- create new Broker");
     let mut broker = Broker::new(config);
