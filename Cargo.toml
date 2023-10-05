@@ -1,7 +1,4 @@
 [workspace]
 resolver = "2"
-members = [
-  "server",
-  "test-client",
-  "double-plugin",
-]
+members = ["server", "test-client", "double-plugin"]
+default-members = ["server"]
