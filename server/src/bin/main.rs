@@ -4,7 +4,7 @@ use extism::{Context, Plugin};
 use log::{info, warn};
 use pretty_env_logger;
 use rumqttd::{Broker, Config, Notification};
-use server::start_plugin;
+use server::plugin::start_plugin;
 
 use std::{path::PathBuf, thread};
 
