@@ -1,5 +1,7 @@
+use std::path::{ PathBuf};
+
 use anyhow::Result;
-use extism::Plugin;
+use extism::Context;
 use log::{trace, debug, error, info};
 use rumqttd::{
     local::{LinkRx, LinkTx},
@@ -8,11 +10,25 @@ use rumqttd::{
 
 const PLUGIN_FUNCTION: &str = "handle";
 
+pub struct Plugin {
+    plugin: extism::Plugin<'static>,
+}
+
+pub fn load_plugin(path: PathBuf) -> Result<Plugin> {
+    info!("Starting plugin: {path:?}");
+
+    let wasm = std::fs::read(path)?;
+
+    let plugin = extism::Plugin::create(wasm, [], false)?;
+
+    Ok(Plugin { plugin })
+}
+
 pub async fn start_plugin<'a>(
-    mut plugin: Plugin<'_>,
+    mut plugin: Plugin,
     mut link_tx: LinkTx,
     mut link_rx: LinkRx,
-    out_topic: String,
+    _out_topic: String,
 ) -> Result<()> {
     info!("Starting plugin ---------------------");
     link_tx.subscribe("doubler").unwrap();
@@ -37,9 +53,9 @@ pub async fn start_plugin<'a>(
                 );
 
                 let payload: Vec<u8> = forward.publish.payload.to_vec();
-                let res: Vec<u8> = plugin.call(PLUGIN_FUNCTION, payload)?.into();
+                let res: Vec<u8> = plugin.plugin.call(PLUGIN_FUNCTION, payload)?.into();
 
-                plugin.cancel_handle().cancel();
+                plugin.plugin.cancel_handle().cancel();
 
                 trace!("-- result {:?}", &res);
 //                let _ = link_tx.publish(out_topic.to_owned(), res);

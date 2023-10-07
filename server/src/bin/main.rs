@@ -4,7 +4,7 @@ use extism::{Context, Plugin};
 use log::{info, warn};
 use pretty_env_logger;
 use rumqttd::{Broker, Config, Notification};
-use server::plugin::start_plugin;
+use server::plugin::{start_plugin, self};
 
 use std::{path::PathBuf, thread};
 
@@ -55,10 +55,7 @@ async fn main() -> Result<()> {
 
     info!("-- start plugins");
     if let Some(plugin_filename) = args.plugin_file {
-        info!("Starting plugin: {plugin_filename:?}");
-        let wasm = std::fs::read(plugin_filename.clone()).expect("failed to load plugin");
-        let ctx = Context::new();
-        let plugin = Plugin::new(&ctx, wasm, [], false).unwrap();
+        let plugin = plugin::load_plugin(plugin_filename)?;
         start_plugin(plugin, link_tx, link_rx, "result".to_owned()).await?;
     }
 
