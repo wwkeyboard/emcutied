@@ -1,8 +1,7 @@
-use std::path::{ PathBuf};
+use std::path::PathBuf;
 
 use anyhow::Result;
-use extism::Context;
-use log::{trace, debug, error, info};
+use log::{debug, info, trace};
 use rumqttd::{
     local::{LinkRx, LinkTx},
     Notification,
@@ -46,7 +45,6 @@ pub async fn start_plugin<'a>(
                 count += 1;
                 debug!(
                     ">>> Topic = {:?}, Count = {}, Payload = {} bytes",
-
                     forward.publish.topic,
                     count,
                     forward.publish.payload.len()
@@ -58,10 +56,10 @@ pub async fn start_plugin<'a>(
                 plugin.plugin.cancel_handle().cancel();
 
                 trace!("-- result {:?}", &res);
-//                let _ = link_tx.publish(out_topic.to_owned(), res);
+                //                let _ = link_tx.publish(out_topic.to_owned(), res);
             }
             v => {
-                error!("unknown plugin notification: {v:?}");
+                trace!("plugin only handles forward notifications: {v:?}");
             }
         }
     }

@@ -1,10 +1,9 @@
 use anyhow::Result;
 use clap::Parser;
-use extism::{Context, Plugin};
 use log::{info, warn};
 use pretty_env_logger;
-use rumqttd::{Broker, Config, Notification};
-use server::plugin::{start_plugin, self};
+use rumqttd::{Broker, Notification};
+use server::plugin::{self, start_plugin};
 
 use std::{path::PathBuf, thread};
 
