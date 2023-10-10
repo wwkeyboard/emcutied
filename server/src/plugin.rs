@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use anyhow::Result;
-use extism::{CurrentPlugin, Error, Function, UserData, Val, ValType};
+use extism::{CurrentPlugin, Error, Function, InternalExt, UserData, Val, ValType};
 use log::{debug, info, trace};
 use rumqttd::{
     local::{LinkRx, LinkTx},
@@ -19,7 +19,7 @@ pub fn load_plugin(path: PathBuf) -> Result<Plugin> {
 
     let wasm = std::fs::read(path)?;
 
-    let f = Function::new("emit", [ValType::I64], [ValType::I64], None, host_emit);
+    let f = Function::new("emit", [ValType::I64], [], None, host_emit);
     let functions = [f];
 
     let plugin = extism::Plugin::create(wasm, functions, false)?;
@@ -60,7 +60,6 @@ pub async fn start_plugin<'a>(
                 plugin.plugin.cancel_handle().cancel();
 
                 trace!("-- result {:?}", &res);
-                //                let _ = link_tx.publish(out_topic.to_owned(), res);
             }
             v => {
                 trace!("plugin only handles forward notifications: {v:?}");
@@ -70,12 +69,14 @@ pub async fn start_plugin<'a>(
 }
 
 fn host_emit(
-    _plugin: &mut CurrentPlugin,
+    plugin: &mut CurrentPlugin,
     inputs: &[Val],
     outputs: &mut [Val],
     _user_data: UserData,
 ) -> Result<(), Error> {
-    println!("Hello from Rust's emit!");
-    outputs[0] = inputs[0].clone();
+    let payload = plugin.memory_read_str(inputs[0].unwrap_i64() as u64)?;
+
+    //                let _ = link_tx.publish(out_topic.to_owned(), res);
+    println!("Hello from Rust's emit! sending payload {payload:?}");
     Ok(())
 }
