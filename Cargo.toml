@@ -2,3 +2,4 @@
 resolver = "2"
 members = ["server", "test-client"]
 default-members = ["server"]
+exclude = ["double-plugin"]
