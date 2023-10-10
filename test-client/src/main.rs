@@ -13,10 +13,15 @@ fn main() {
     let (mut client, mut connection) = Client::new(mqttoptions, 10);
     client.subscribe("doubler/#", QoS::AtMostOnce).unwrap();
 
-            client
-                .publish("doubler/double", QoS::AtLeastOnce, false, r#"{"data": 2 }"#.as_bytes())
-                .unwrap();
-            thread::sleep(Duration::from_millis(100));
+    client
+        .publish(
+            "doubler/double",
+            QoS::AtLeastOnce,
+            false,
+            r#"{"data": 2 }"#.as_bytes(),
+        )
+        .unwrap();
+    thread::sleep(Duration::from_millis(100));
 
     for (_i, message) in connection.iter().enumerate() {
         match message {
