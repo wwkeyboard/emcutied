@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 use anyhow::Result;
+use extism::{CurrentPlugin, Error, Function, UserData, Val, ValType};
 use log::{debug, info, trace};
 use rumqttd::{
     local::{LinkRx, LinkTx},
@@ -18,7 +19,10 @@ pub fn load_plugin(path: PathBuf) -> Result<Plugin> {
 
     let wasm = std::fs::read(path)?;
 
-    let plugin = extism::Plugin::create(wasm, [], false)?;
+    let f = Function::new("emit", [ValType::I64], [ValType::I64], None, host_emit);
+    let functions = [f];
+
+    let plugin = extism::Plugin::create(wasm, functions, false)?;
 
     Ok(Plugin { plugin })
 }
@@ -63,4 +67,15 @@ pub async fn start_plugin<'a>(
             }
         }
     }
+}
+
+fn host_emit(
+    _plugin: &mut CurrentPlugin,
+    inputs: &[Val],
+    outputs: &mut [Val],
+    _user_data: UserData,
+) -> Result<(), Error> {
+    println!("Hello from Rust's emit!");
+    outputs[0] = inputs[0].clone();
+    Ok(())
 }
