@@ -36,16 +36,17 @@ async fn main() -> Result<()> {
     info!("-- create new Broker");
     let mut broker = Broker::new(config);
 
-    info!("-- create broker link named 'pluginnode'");
-    let (mut link_tx, link_rx) = broker.link("pluginnode").unwrap();
-
     info!("-- create broker link named 'monitornode'");
     let (mut monitor_link_tx, mut monitor_link_rx) = broker.link("monitornode").unwrap();
 
-    info!("-- pluginnode subscribe to #");
-    link_tx.subscribe("#").unwrap();
     info!("-- monitornode subscribe to #");
     monitor_link_tx.subscribe("#").unwrap();
+
+    info!("-- create broker link named 'pluginnode_sender'");
+    let (mut sender_link_tx, _sender_link_rx) = broker.link("pluginnode_sender").unwrap();
+    info!("-- create broker link named 'pluginnode'");
+    let (mut link_tx, link_rx) = broker.link("pluginnode").unwrap();
+    link_tx.subscribe("#").unwrap();
 
     info!("-- start broker thread");
     thread::spawn(move || {
@@ -54,7 +55,7 @@ async fn main() -> Result<()> {
 
     info!("-- start plugins");
     if let Some(plugin_filename) = args.plugin_file {
-        let plugin = plugin::load_plugin(plugin_filename)?;
+        let plugin = plugin::load_plugin(plugin_filename, sender_link_tx)?;
         start_plugin(plugin, link_tx, link_rx, "result".to_owned()).await?;
     }
 

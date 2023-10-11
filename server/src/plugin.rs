@@ -9,17 +9,19 @@ use rumqttd::{
 };
 
 const PLUGIN_FUNCTION: &str = "handle";
+const OUT_TOPIC: &str = "result";
 
 pub struct Plugin {
     plugin: extism::Plugin<'static>,
 }
 
-pub fn load_plugin(path: PathBuf) -> Result<Plugin> {
+pub fn load_plugin(path: PathBuf, link_tx: LinkTx) -> Result<Plugin> {
     info!("Starting plugin: {path:?}");
 
     let wasm = std::fs::read(path)?;
 
-    let f = Function::new("emit", [ValType::I64], [], None, host_emit);
+    let user_data = UserData::new(Box::new(link_tx));
+    let f = Function::new("emit", [ValType::I64], [], Some(user_data), host_emit);
     let functions = [f];
 
     let plugin = extism::Plugin::create(wasm, functions, false)?;
@@ -34,6 +36,9 @@ pub async fn start_plugin<'a>(
     _out_topic: String,
 ) -> Result<()> {
     info!("Starting plugin ---------------------");
+
+    // This looks a little wonkey, but you have to tx the subscription message on the tx link,
+    // not the rx link.
     link_tx.subscribe("doubler").unwrap();
 
     let mut count = 0;
@@ -71,12 +76,19 @@ pub async fn start_plugin<'a>(
 fn host_emit(
     plugin: &mut CurrentPlugin,
     inputs: &[Val],
-    outputs: &mut [Val],
-    _user_data: UserData,
+    _outputs: &mut [Val],
+    mut user_data: UserData,
 ) -> Result<(), Error> {
     let payload = plugin.memory_read_str(inputs[0].unwrap_i64() as u64)?;
 
-    //                let _ = link_tx.publish(out_topic.to_owned(), res);
+    let data = payload.clone();
+
+    if let Some(link_tx) = user_data.any_mut() {
+        let tx = link_tx.downcast_mut::<LinkTx>().unwrap();
+
+        let _ = tx.try_publish(OUT_TOPIC.to_owned(), payload);
+    }
+
     println!("Hello from Rust's emit! sending payload {payload:?}");
     Ok(())
 }
