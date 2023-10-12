@@ -83,11 +83,11 @@ fn host_emit(
 
     let data = payload.clone();
 
-    if let Some(link_tx) = user_data.any_mut() {
-        let tx = link_tx.downcast_mut::<LinkTx>().unwrap();
+    let link_tx = user_data.any_mut().unwrap();
 
-        let _ = tx.try_publish(OUT_TOPIC.to_owned(), payload);
-    }
+    let tx = link_tx.downcast_mut::<LinkTx>().unwrap();
+
+    let _ = tx.try_publish(OUT_TOPIC.to_owned(), data);
 
     println!("Hello from Rust's emit! sending payload {payload:?}");
     Ok(())
