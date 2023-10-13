@@ -43,7 +43,8 @@ async fn main() -> Result<()> {
     monitor_link_tx.subscribe("#").unwrap();
 
     info!("-- create broker link named 'pluginnode_sender'");
-    let (mut sender_link_tx, _sender_link_rx) = broker.link("pluginnode_sender").unwrap();
+    let (sender_link_tx, _sender_link_rx) = broker.link("pluginnode_sender").unwrap();
+
     info!("-- create broker link named 'pluginnode'");
     let (mut link_tx, link_rx) = broker.link("pluginnode").unwrap();
     link_tx.subscribe("#").unwrap();
