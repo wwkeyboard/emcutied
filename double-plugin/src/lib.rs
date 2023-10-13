@@ -3,7 +3,7 @@ use serde::Deserialize;
 
 // The host function
 extern "C" {
-    fn emit(data: u64) -> ();
+    fn emit(topic: u64, data: u64) -> ();
 }
 
 #[derive(Deserialize)]
@@ -20,10 +20,12 @@ fn run_handle(input: String) -> FnResult<String> {
     let data: InData = serde_json::from_str(&input).unwrap();
 
     let payload = format!("{{\"data\": {}}}", data.data * 2.0);
-    let memory = Memory::from_bytes(&payload);
+    let payload_offset = Memory::from_bytes(&payload).offset as u64;
+
+    let topic_offset = Memory::from_bytes("demo/doubler").offset as u64;
 
     unsafe {
-        emit(memory.offset as u64);
+        emit(topic_offset, payload_offset);
     }
 
     Ok(payload)

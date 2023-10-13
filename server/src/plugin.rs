@@ -21,7 +21,13 @@ pub fn load_plugin(path: PathBuf, link_tx: LinkTx) -> Result<Plugin> {
     let wasm = std::fs::read(path)?;
 
     let user_data = UserData::new(Box::new(link_tx));
-    let f = Function::new("emit", [ValType::I64], [], Some(user_data), host_emit);
+    let f = Function::new(
+        "emit",
+        [ValType::I64, ValType::I64],
+        [],
+        Some(user_data),
+        host_emit,
+    );
     let functions = [f];
 
     let plugin = extism::Plugin::create(wasm, functions, false)?;
@@ -73,22 +79,32 @@ pub async fn start_plugin<'a>(
     }
 }
 
+/// Ask the host to emit a message on a topic.
+///
+/// Copies the topic and payload out of the shared plugin memory then
+/// publishes out the message.
 fn host_emit(
     plugin: &mut CurrentPlugin,
     inputs: &[Val],
     _outputs: &mut [Val],
     mut user_data: UserData,
 ) -> Result<(), Error> {
-    let payload = plugin.memory_read_str(inputs[0].unwrap_i64() as u64)?;
-
-    let data = payload.clone();
+    let topic = get_string_from_plugin(plugin, inputs[0].unwrap_i64() as u64)?;
+    let payload = get_string_from_plugin(plugin, inputs[1].unwrap_i64() as u64)?;
 
     let link_tx = user_data.any_mut().unwrap();
 
-    let tx = link_tx.downcast_mut::<LinkTx>().unwrap();
+    //    let tx = link_tx.downcast_mut::<LinkTx>().unwrap();
 
-    let _ = tx.try_publish(OUT_TOPIC.to_owned(), data);
+    //    let _ = tx.try_publish(OUT_TOPIC.to_owned(), data);
 
-    println!("Hello from Rust's emit! sending payload {payload:?}");
+    println!("On topic {topic:?} emit {payload:?}");
     Ok(())
+}
+
+/// We copy the string out of the shared plugin memory into new memory because
+/// the shared mutable reference makes the borrow checker ~very~ unhappy.
+fn get_string_from_plugin(plugin: &mut CurrentPlugin, offset: u64) -> Result<String, Error> {
+    let response = plugin.memory_read_str(offset)?;
+    Ok(String::from(response))
 }
