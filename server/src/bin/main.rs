@@ -3,6 +3,7 @@ use clap::Parser;
 use log::{info, warn};
 use pretty_env_logger;
 use rumqttd::{Broker, Notification};
+use server::config::PluginConfig;
 use server::plugin::{self, start_plugin};
 
 use std::{path::PathBuf, thread};
@@ -12,6 +13,9 @@ use std::{path::PathBuf, thread};
 struct Args {
     #[arg(short, long)]
     plugin_file: Option<PathBuf>,
+
+    #[arg(short, long)]
+    config_file: PathBuf,
 
     #[arg(short, long, default_value = "./rumqttd.toml")]
     rumqttd_config: PathBuf,
@@ -26,15 +30,17 @@ async fn main() -> Result<()> {
     let config_file = config::File::from(args.rumqttd_config);
 
     // Config file is hardcoded to the current directory
-    let config = config::Config::builder()
+    let rumqttd_config = config::Config::builder()
         .add_source(config_file)
         .build()
         .expect("couldn't open rumqttd config file")
         .try_deserialize()
         .expect("couldn't parse rumqttd config file");
 
+    let main_config = PluginConfig::from_file(args.config_file);
+
     info!("-- create new Broker");
-    let mut broker = Broker::new(config);
+    let mut broker = Broker::new(rumqttd_config);
 
     info!("-- create broker link named 'monitornode'");
     let (mut monitor_link_tx, mut monitor_link_rx) = broker.link("monitornode").unwrap();

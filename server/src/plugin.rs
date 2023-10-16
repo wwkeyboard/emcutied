@@ -19,7 +19,6 @@ pub fn load_plugin(path: PathBuf, link_tx: LinkTx) -> Result<Plugin> {
 
     let wasm = std::fs::read(path)?;
 
-    println!("-------> {:?}", std::any::type_name_of_val(&link_tx));
     let user_data = UserData::new(Box::new(link_tx));
 
     let f = Function::new(
@@ -96,11 +95,10 @@ fn host_emit(
     let link_tx = user_data.any_mut().unwrap();
 
     let tx: Option<&mut LinkTx> = link_tx.downcast_mut();
-    println!("-------> {:?}", std::any::type_name_of_val(&tx));
-    
+
     println!("On topic {:?} emit {:?}", topic.clone(), payload.clone());
 
-    let _ = tx.try_publish(topic, payload);
+    //let _ = tx.try_publish(topic, payload);
 
     Ok(())
 }
