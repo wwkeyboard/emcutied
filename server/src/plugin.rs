@@ -94,7 +94,7 @@ fn host_emit(
 
     let link_tx = user_data.any_mut().unwrap();
 
-    let tx: Option<&mut LinkTx> = link_tx.downcast_mut();
+    let _tx: Option<&mut LinkTx> = link_tx.downcast_mut();
 
     println!("On topic {:?} emit {:?}", topic.clone(), payload.clone());
 

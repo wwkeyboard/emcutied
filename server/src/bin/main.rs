@@ -37,7 +37,7 @@ async fn main() -> Result<()> {
         .try_deserialize()
         .expect("couldn't parse rumqttd config file");
 
-    let main_config = PluginConfig::from_file(args.config_file);
+    let _main_config = PluginConfig::from_file(args.config_file);
 
     info!("-- create new Broker");
     let mut broker = Broker::new(rumqttd_config);
