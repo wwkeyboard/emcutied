@@ -4,7 +4,7 @@ use log::{info, warn};
 use pretty_env_logger;
 use rumqttd::{Broker, Notification};
 use server::config::PluginConfig;
-use server::plugin::{self, start_plugin};
+use server::plugin::{self, start_plugin, Plugin};
 use server::rumqttd::Rumqttd;
 
 use std::{path::PathBuf, thread};
@@ -12,9 +12,6 @@ use std::{path::PathBuf, thread};
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
-    #[arg(short, long)]
-    plugin_file: Option<PathBuf>,
-
     #[arg(short, long)]
     config_file: PathBuf,
 }
@@ -29,6 +26,7 @@ async fn main() -> Result<()> {
 
     let mqttd = Rumqttd::new(main_config.rumqttd_config);
 
+    // monitornode is what prints to stdout
     let mut monitor = mqttd.link("monitornode")?;
 
     info!("-- monitornode subscribe to #");
@@ -41,19 +39,24 @@ async fn main() -> Result<()> {
     let mut plugin_node = mqttd.link("pluginnode").unwrap();
     plugin_node.link_tx.subscribe("#").unwrap();
 
-    mqttd.start();
-
     info!("-- start plugins");
-    if let Some(plugin_filename) = args.plugin_file {
-        let plugin = plugin::load_plugin(plugin_filename, sender.link_tx)?;
-        start_plugin(
-            plugin,
-            plugin_node.link_tx,
-            plugin_node.link_rx,
-            "result".to_owned(),
-        )
-        .await?;
+    //    if let Some(plugin_filename) = args.plugin_file {
+    for plugin_config in main_config.plugins {
+        //let plugin = plugin::load_plugin(plugin_filename, sender.link_tx)?;
+        let plugin = Plugin::new(
+            plugin_config.file,
+            &mqttd,
+            plugin_config.in_topic.as_str(),
+            plugin_config.out_topic.as_str(),
+        )?;
+
+        tokio::spawn(async move {
+            plugin.run().await;
+        });
     }
+
+    // Now that the plugins are started this consumes mqttd and starts the server
+    mqttd.start();
 
     let mut count = 0;
     loop {

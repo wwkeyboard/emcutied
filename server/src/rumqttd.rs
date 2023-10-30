@@ -40,13 +40,14 @@ impl Rumqttd {
 
     pub fn link(&self, name: &str) -> Result<Link> {
         info!("-- create broker link named 'monitornode'");
-        let (link_tx, link_rx) = self.broker.link(name).unwrap();
+        let (link_tx, link_rx) = self.broker.link(name)?;
 
         Ok(Link { link_tx, link_rx })
     }
 
     pub fn start(mut self) {
         info!("-- start broker thread");
+
         thread::spawn(move || {
             self.broker.start().unwrap();
         });

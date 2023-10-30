@@ -13,7 +13,7 @@ pub struct Plugin {
     pub name: String,
     pub file: PathBuf,
     pub in_topic: String,
-    pub out_topic: Option<String>,
+    pub out_topic: String,
 }
 
 impl PluginConfig {

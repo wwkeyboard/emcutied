@@ -1,38 +1,90 @@
 use std::path::PathBuf;
 
 use anyhow::Result;
-use extism::{CurrentPlugin, Error, Function, InternalExt, UserData, Val, ValType};
+use extism::{CurrentPlugin, Error, InternalExt, UserData, Val};
 use log::{debug, info, trace};
 use rumqttd::{
     local::{LinkRx, LinkTx},
-    Notification,
+    Broker, Notification,
 };
+
+use crate::rumqttd::{Link, Rumqttd};
 
 const PLUGIN_FUNCTION: &str = "handle";
 
 pub struct Plugin {
     plugin: extism::Plugin<'static>,
+    in_topic: String,
+    out_topic: String,
+    links: Link,
+    file: PathBuf,
 }
 
-pub fn load_plugin(path: PathBuf, link_tx: LinkTx) -> Result<Plugin> {
-    info!("Starting plugin: {path:?}");
+impl Plugin {
+    pub fn new(file: PathBuf, broker: &Rumqttd, in_topic: &str, out_topic: &str) -> Result<Plugin> {
+        // load from file
+        let plugin = Plugin::load_plugin(&file)?;
 
-    let wasm = std::fs::read(path)?;
+        // get links from broker
+        // TODO: The broker has a limited number of connections it can manage and might
+        // reject additional links. If this becomes an issue I might have to create a
+        // single link and dispatch to the plugins myself.
+        let links = broker.link(file.to_str().unwrap_or("unknown"))?;
 
-    let user_data = UserData::new(Box::new(link_tx));
+        let p = Plugin {
+            plugin,
+            in_topic: in_topic.to_owned(),
+            out_topic: out_topic.to_owned(),
+            links,
+            file,
+        };
+        Ok(p)
+    }
 
-    let f = Function::new(
-        "emit",
-        [ValType::I64, ValType::I64],
-        [],
-        Some(user_data),
-        host_emit,
-    );
-    let functions = [f];
+    /// load the plugin's code from the `path`
+    fn load_plugin(path: &PathBuf) -> Result<extism::Plugin<'static>> {
+        info!("loading plugin from path: {path:?}");
 
-    let plugin = extism::Plugin::create(wasm, functions, false)?;
+        let wasm = std::fs::read(path)?;
 
-    Ok(Plugin { plugin })
+        extism::Plugin::create(wasm, [], false)
+    }
+
+    pub async fn run(mut self) -> Result<()> {
+        info!(
+            "Starting plugin: {}",
+            self.file.to_str().unwrap_or("unknown")
+        );
+        self.links.link_tx.subscribe(self.in_topic);
+
+        loop {
+            let notification = match self.links.link_rx.recv()? {
+                Some(v) => v,
+                None => return Ok(()), // all senders have been dropped inside rumqttd
+            };
+
+            match notification {
+                Notification::Forward(forward) => {
+                    let payload: Vec<u8> = forward.publish.payload.to_vec();
+                    debug!(
+                        ">>> Topic = {:?}, Payload = {}",
+                        forward.publish.topic,
+                        String::from_utf8(payload.clone())
+                            .unwrap_or("<<not printable>>".to_owned())
+                    );
+
+                    let res: Vec<u8> = self.plugin.call(PLUGIN_FUNCTION, payload)?.into();
+
+                    self.plugin.cancel_handle().cancel();
+
+                    trace!("-- result {:?}", &res);
+                }
+                v => {
+                    trace!("plugin only handles forward notifications: {v:?}");
+                }
+            }
+        }
+    }
 }
 
 pub async fn start_plugin<'a>(
@@ -43,7 +95,7 @@ pub async fn start_plugin<'a>(
 ) -> Result<()> {
     info!("Starting plugin ---------------------");
 
-    // This looks a little wonkey, but you have to tx the subscription message on the tx link,
+    // This looks a little wonkey, but you have to send the subscription message on the tx link,
     // not the rx link.
     link_tx.subscribe("doubler").unwrap();
 
