@@ -40,9 +40,7 @@ async fn main() -> Result<()> {
     plugin_node.link_tx.subscribe("#").unwrap();
 
     info!("-- start plugins");
-    //    if let Some(plugin_filename) = args.plugin_file {
     for plugin_config in main_config.plugins {
-        //let plugin = plugin::load_plugin(plugin_filename, sender.link_tx)?;
         let plugin = Plugin::new(
             plugin_config.file,
             &mqttd,
