@@ -5,37 +5,28 @@ use extism::{CurrentPlugin, Error, InternalExt, UserData, Val};
 use log::{debug, info, trace};
 use rumqttd::{
     local::{LinkRx, LinkTx},
-    Broker, Notification,
+    Notification,
 };
-
-use crate::rumqttd::{Link, Rumqttd};
 
 const PLUGIN_FUNCTION: &str = "handle";
 
 pub struct Plugin {
     plugin: extism::Plugin<'static>,
-    in_topic: String,
-    out_topic: String,
-    links: Link,
-    file: PathBuf,
+    pub in_topic: String,
+    pub out_topic: String,
+    pub file: PathBuf,
 }
 
 impl Plugin {
-    pub fn new(file: PathBuf, broker: &Rumqttd, in_topic: &str, out_topic: &str) -> Result<Plugin> {
+    pub fn new(file: PathBuf, in_topic: &str, out_topic: &str) -> Result<Plugin> {
         // load from file
         let plugin = Plugin::load_plugin(&file)?;
 
         // get links from broker
-        // TODO: The broker has a limited number of connections it can manage and might
-        // reject additional links. If this becomes an issue I might have to create a
-        // single link and dispatch to the plugins myself.
-        let links = broker.link(file.to_str().unwrap_or("unknown"))?;
-
         let p = Plugin {
             plugin,
             in_topic: in_topic.to_owned(),
             out_topic: out_topic.to_owned(),
-            links,
             file,
         };
         Ok(p)
@@ -50,41 +41,43 @@ impl Plugin {
         extism::Plugin::create(wasm, [], false)
     }
 
-    pub async fn run(mut self) -> Result<()> {
-        info!(
-            "Starting plugin: {}",
-            self.file.to_str().unwrap_or("unknown")
-        );
-        self.links.link_tx.subscribe(self.in_topic);
-
-        loop {
-            let notification = match self.links.link_rx.recv()? {
-                Some(v) => v,
-                None => return Ok(()), // all senders have been dropped inside rumqttd
-            };
-
-            match notification {
-                Notification::Forward(forward) => {
-                    let payload: Vec<u8> = forward.publish.payload.to_vec();
-                    debug!(
-                        ">>> Topic = {:?}, Payload = {}",
-                        forward.publish.topic,
-                        String::from_utf8(payload.clone())
-                            .unwrap_or("<<not printable>>".to_owned())
-                    );
-
-                    let res: Vec<u8> = self.plugin.call(PLUGIN_FUNCTION, payload)?.into();
-
-                    self.plugin.cancel_handle().cancel();
-
-                    trace!("-- result {:?}", &res);
-                }
-                v => {
-                    trace!("plugin only handles forward notifications: {v:?}");
-                }
-            }
-        }
-    }
+    // TODO: pull this out into a router that listens to everything and
+    // dispatches to the correct plugin.
+    // pub async fn run(mut self) -> Result<()> {
+    //     info!(
+    //         "Starting plugin: {}",
+    //         self.file.to_str().unwrap_or("unknown")
+    //     );
+    //     self.links.link_tx.subscribe(self.in_topic);
+    //
+    //     loop {
+    //         let notification = match self.links.link_rx.recv()? {
+    //             Some(v) => v,
+    //             None => return Ok(()), // all senders have been dropped inside rumqttd
+    //         };
+    //
+    //         match notification {
+    //             Notification::Forward(forward) => {
+    //                 let payload: Vec<u8> = forward.publish.payload.to_vec();
+    //                 debug!(
+    //                     ">>> Topic = {:?}, Payload = {}",
+    //                     forward.publish.topic,
+    //                     String::from_utf8(payload.clone())
+    //                         .unwrap_or("<<not printable>>".to_owned())
+    //                 );
+    //
+    //                 let res: Vec<u8> = self.plugin.call(PLUGIN_FUNCTION, payload)?.into();
+    //
+    //                 self.plugin.cancel_handle().cancel();
+    //
+    //                 trace!("-- result {:?}", &res);
+    //             }
+    //             v => {
+    //                 trace!("plugin only handles forward notifications: {v:?}");
+    //             }
+    //         }
+    //     }
+    // }
 }
 
 pub async fn start_plugin<'a>(

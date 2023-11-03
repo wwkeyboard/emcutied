@@ -27,10 +27,10 @@ async fn main() -> Result<()> {
     let mqttd = Rumqttd::new(main_config.rumqttd_config);
 
     // monitornode is what prints to stdout
-    let mut monitor = mqttd.link("monitornode")?;
+    // let mut monitor = mqttd.link("monitornode")?;
 
-    info!("-- monitornode subscribe to #");
-    monitor.link_tx.subscribe("#").unwrap();
+    // info!("-- monitornode subscribe to #");
+    // monitor.link_tx.subscribe("#").unwrap();
 
     info!("-- create broker link named 'pluginnode_sender'");
     let mut sender = mqttd.link("pluginnode_sender").unwrap();
@@ -43,39 +43,39 @@ async fn main() -> Result<()> {
     for plugin_config in main_config.plugins {
         let plugin = Plugin::new(
             plugin_config.file,
-            &mqttd,
             plugin_config.in_topic.as_str(),
             plugin_config.out_topic.as_str(),
         )?;
 
-        tokio::spawn(async move {
-            plugin.run().await;
-        });
+        // tokio::spawn(async move {
+        //     plugin.run().await;
+        // });
     }
 
     // Now that the plugins are started this consumes mqttd and starts the server
     mqttd.start();
+    Ok(())
 
-    let mut count = 0;
-    loop {
-        let notification = match monitor.link_rx.recv().unwrap() {
-            Some(v) => v,
-            None => continue,
-        };
-
-        match notification {
-            Notification::Forward(forward) => {
-                count += 1;
-                println!(
-                    "Topic = {:?}, Count = {}, Payload = {} bytes",
-                    forward.publish.topic,
-                    count,
-                    forward.publish.payload.len()
-                );
-            }
-            v => {
-                warn!("unknown message {v:?}");
-            }
-        }
-    }
+    // let mut count = 0;
+    // loop {
+    //     let notification = match monitor.link_rx.recv().unwrap() {
+    //         Some(v) => v,
+    //         None => continue,
+    //     };
+    //
+    //     match notification {
+    //         Notification::Forward(forward) => {
+    //             count += 1;
+    //             println!(
+    //                 "Topic = {:?}, Count = {}, Payload = {} bytes",
+    //                 forward.publish.topic,
+    //                 count,
+    //                 forward.publish.payload.len()
+    //             );
+    //         }
+    //         v => {
+    //             warn!("unknown message {v:?}");
+    //         }
+    //     }
+    // }
 }

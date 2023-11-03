@@ -56,11 +56,13 @@ rumqttd_config = "./rumqttd.conf"
 [[plugins]]
 name = "doubler"
 in_topic = "demo/doubler"
+out_topic = "demo/doubled"
 file = "./double_plugin.wasm"
 
 [[plugins]]
 name = "another"
 in_topic = "demo/another"
+out_topic = "demo/doubled"
 file = "./another.wasm"
 "#
         .to_owned()
