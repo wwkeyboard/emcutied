@@ -1,7 +1,6 @@
 use std::path::PathBuf;
 
 use anyhow::Result;
-use extism::{CurrentPlugin, Error, InternalExt, UserData, Val};
 use log::{debug, info, trace};
 use rumqttd::{
     local::{LinkRx, LinkTx},
@@ -122,35 +121,4 @@ pub async fn start_plugin<'a>(
             }
         }
     }
-}
-
-/// Ask the host to emit a message on a topic.
-///
-/// Copies the topic and payload out of the shared plugin memory then
-/// publishes out the message.
-fn host_emit(
-    plugin: &mut CurrentPlugin,
-    inputs: &[Val],
-    _outputs: &mut [Val],
-    mut user_data: UserData,
-) -> Result<(), Error> {
-    let topic = get_string_from_plugin(plugin, inputs[0].unwrap_i64() as u64)?;
-    let payload = get_string_from_plugin(plugin, inputs[1].unwrap_i64() as u64)?;
-
-    let link_tx = user_data.any_mut().unwrap();
-
-    let _tx: Option<&mut LinkTx> = link_tx.downcast_mut();
-
-    println!("On topic {:?} emit {:?}", topic.clone(), payload.clone());
-
-    //let _ = tx.try_publish(topic, payload);
-
-    Ok(())
-}
-
-/// We copy the string out of the shared plugin memory into new memory because
-/// the shared mutable reference makes the borrow checker ~very~ unhappy.
-fn get_string_from_plugin(plugin: &mut CurrentPlugin, offset: u64) -> Result<String, Error> {
-    let response = plugin.memory_read_str(offset)?;
-    Ok(String::from(response))
 }

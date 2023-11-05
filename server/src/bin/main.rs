@@ -1,14 +1,12 @@
 use anyhow::Result;
 use clap::Parser;
-use log::{info, warn};
-use pretty_env_logger;
-use rumqttd::{Broker, Notification};
+use log::info;
 use server::config::PluginConfig;
-use server::plugin::{self, start_plugin, Plugin};
-use server::router::{self, Router};
+use server::plugin::Plugin;
+use server::router::Router;
 use server::rumqttd::Rumqttd;
 
-use std::{path::PathBuf, thread};
+use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]

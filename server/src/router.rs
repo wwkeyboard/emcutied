@@ -21,7 +21,7 @@ impl Router {
 
     pub fn add(&mut self, plugin: Box<Plugin>) {
         let key = plugin.in_topic.clone();
-        let ps = self.plugins.entry(key).or_insert(Vec::new());
+        let ps = self.plugins.entry(key).or_default();
         ps.push(plugin);
     }
 
@@ -47,6 +47,12 @@ impl Router {
     // TODO: route function that takes a message and figures out which plugin to send it to
     // TODO: a run function that takes the link_rx, pulls messages from it, asks the route
     // where it should go, then spawns a new tokio task to handle that plugin
+}
+
+impl Default for Router {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 #[cfg(test)]
