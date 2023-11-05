@@ -48,6 +48,7 @@ impl Rumqttd {
     pub fn start(mut self) {
         info!("-- start broker thread");
 
+        // TOOD: Should this be in a tokio task instead?
         thread::spawn(move || {
             self.broker.start().unwrap();
         });

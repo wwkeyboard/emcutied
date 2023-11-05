@@ -6,7 +6,7 @@ use rumqttd::local::LinkRx;
 use crate::plugin::Plugin;
 
 /// Router
-struct Router {
+pub struct Router {
     plugins: Plugins,
 }
 
@@ -25,7 +25,7 @@ impl Router {
         ps.push(plugin);
     }
 
-    fn run(self, mut link_rx: LinkRx) {
+    pub fn run(self, mut link_rx: LinkRx) {
         loop {
             let notification = match link_rx.recv().unwrap() {
                 Some(v) => v,

@@ -5,6 +5,7 @@ use pretty_env_logger;
 use rumqttd::{Broker, Notification};
 use server::config::PluginConfig;
 use server::plugin::{self, start_plugin, Plugin};
+use server::router::{self, Router};
 use server::rumqttd::Rumqttd;
 
 use std::{path::PathBuf, thread};
@@ -26,12 +27,11 @@ async fn main() -> Result<()> {
 
     let mqttd = Rumqttd::new(main_config.rumqttd_config);
 
-    info!("-- create broker link named 'pluginnode_sender'");
-    let mut sender = mqttd.link("pluginnode_sender").unwrap();
-
     info!("-- create broker link named 'pluginnode'");
     let mut plugin_node = mqttd.link("pluginnode").unwrap();
     plugin_node.link_tx.subscribe("#").unwrap();
+
+    let mut router = Router::new();
 
     info!("-- start plugins");
     for plugin_config in main_config.plugins {
@@ -41,12 +41,13 @@ async fn main() -> Result<()> {
             plugin_config.out_topic.as_str(),
         )?;
 
-        // tokio::spawn(async move {
-        //     plugin.run().await;
-        // });
+        router.add(Box::new(plugin));
     }
 
     // Now that the plugins are started this consumes mqttd and starts the server
     mqttd.start();
+
+    router.run(plugin_node.link_rx);
+
     Ok(())
 }
