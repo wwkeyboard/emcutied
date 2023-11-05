@@ -41,6 +41,10 @@ impl Plugin {
         extism::Plugin::create(wasm, [], false)
     }
 
+    pub fn run(&self, _message: &str) -> Result<()> {
+        Ok(())
+    }
+
     // TODO: pull this out into a router that listens to everything and
     // dispatches to the correct plugin.
     // pub async fn run(mut self) -> Result<()> {

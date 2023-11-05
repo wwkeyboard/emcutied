@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use log::warn;
+use log::{error, trace, warn};
 use rumqttd::local::LinkRx;
 
 use crate::plugin::Plugin;
@@ -25,7 +25,7 @@ impl Router {
         ps.push(plugin);
     }
 
-    pub fn run(self, mut link_rx: LinkRx) {
+    pub fn run(self, mut link_rx: LinkRx) -> ! {
         loop {
             let notification = match link_rx.recv().unwrap() {
                 Some(v) => v,
@@ -34,8 +34,18 @@ impl Router {
 
             match notification {
                 rumqttd::Notification::Forward(message) => {
-                    println!("received message on {:?}", message.publish.topic);
-                    // TODO: this is where we dispatch the message
+                    trace!("received message on {:?}", message.publish.topic);
+                    let Ok(topic) = std::str::from_utf8(&message.publish.topic) else {
+                        error!("couldn't parse topic from message");
+                        continue;
+                    };
+
+                    let Ok(payload) = std::str::from_utf8(&message.publish.payload) else {
+                        error!("we only handle utf8 JSON payloads");
+                        continue;
+                    };
+
+                    self.route(topic.to_owned(), payload.to_owned())
                 }
                 v => {
                     warn!("unhandled message {v:?}");
@@ -44,6 +54,18 @@ impl Router {
         }
     }
 
+    fn route(&self, topic: String, message: String) {
+        let Some(plugins) = self.plugins.get(&topic) else {
+            return;
+        };
+        for plugin in plugins {
+            let Ok(res) = plugin.run(&message) else {
+                warn!("error running plugin");
+                continue;
+            };
+            println!(">> {res:?}");
+        }
+    }
     // TODO: route function that takes a message and figures out which plugin to send it to
     // TODO: a run function that takes the link_rx, pulls messages from it, asks the route
     // where it should go, then spawns a new tokio task to handle that plugin

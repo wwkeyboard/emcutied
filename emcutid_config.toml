@@ -2,6 +2,6 @@ rumqttd_config = "./server/rumqttd.toml"
 
 [[plugins]]
 name = "doubler"
-file = "./target/wasm32-unknown-unknown/release/double_plugin.wasm"
+file = "./double_plugin.wasm"
 in_topic = "demo/doubler"
 out_topic = "demo/doubled"
