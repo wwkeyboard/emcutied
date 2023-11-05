@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use log::{debug, info, trace};
 use rumqttd::{
     local::{LinkRx, LinkTx},
@@ -35,7 +35,8 @@ impl Plugin {
     fn load_plugin(path: &PathBuf) -> Result<extism::Plugin<'static>> {
         info!("loading plugin from path: {path:?}");
 
-        let wasm = std::fs::read(path)?;
+        let wasm = std::fs::read(path)
+            .with_context(|| format!("reading plugin {} from filesystem", path.display()))?;
 
         extism::Plugin::create(wasm, [], false)
     }
