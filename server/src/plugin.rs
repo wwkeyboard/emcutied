@@ -14,10 +14,11 @@ pub struct Plugin {
     pub in_topic: String,
     pub out_topic: String,
     pub file: PathBuf,
+    pub name: String,
 }
 
 impl Plugin {
-    pub fn new(file: PathBuf, in_topic: &str, out_topic: &str) -> Result<Plugin> {
+    pub fn new(file: PathBuf, name: &str, in_topic: &str, out_topic: &str) -> Result<Plugin> {
         // load from file
         let plugin = Plugin::load_plugin(&file)?;
 
@@ -27,6 +28,7 @@ impl Plugin {
             in_topic: in_topic.to_owned(),
             out_topic: out_topic.to_owned(),
             file,
+            name: name.to_owned(),
         };
         Ok(p)
     }
@@ -41,7 +43,8 @@ impl Plugin {
         extism::Plugin::create(wasm, [], false)
     }
 
-    pub fn run(&self, _message: &str) -> Result<()> {
+    pub fn run(&mut self, message: &str) -> Result<()> {
+        let _res = self.plugin.call(PLUGIN_FUNCTION, message)?;
         Ok(())
     }
 

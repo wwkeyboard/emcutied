@@ -37,6 +37,7 @@ async fn main() -> Result<()> {
             plugin_config.file,
             plugin_config.in_topic.as_str(),
             plugin_config.out_topic.as_str(),
+            plugin_config.name.as_str(),
         )?;
 
         router.add(Box::new(plugin));
@@ -46,6 +47,4 @@ async fn main() -> Result<()> {
     mqttd.start();
 
     router.run(plugin_node.link_rx);
-
-    Ok(())
 }

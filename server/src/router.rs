@@ -1,16 +1,16 @@
 use std::collections::HashMap;
-
-use log::{error, trace, warn};
-use rumqttd::local::LinkRx;
+use std::sync::Mutex;
 
 use crate::plugin::Plugin;
+use log::{error, trace, warn};
+use rumqttd::local::LinkRx;
 
 /// Router
 pub struct Router {
     plugins: Plugins,
 }
 
-type Plugins = HashMap<String, Vec<Box<Plugin>>>;
+type Plugins = HashMap<String, Vec<Mutex<Box<Plugin>>>>;
 
 impl Router {
     pub fn new() -> Router {
@@ -22,7 +22,15 @@ impl Router {
     pub fn add(&mut self, plugin: Box<Plugin>) {
         let key = plugin.in_topic.clone();
         let ps = self.plugins.entry(key).or_default();
-        ps.push(plugin);
+
+        trace!(
+            "on topics {} -> {} loading plugin {}",
+            plugin.in_topic,
+            plugin.out_topic,
+            plugin.name
+        );
+
+        ps.push(Mutex::new(plugin));
     }
 
     pub fn run(self, mut link_rx: LinkRx) -> ! {
@@ -59,6 +67,10 @@ impl Router {
             return;
         };
         for plugin in plugins {
+            let Ok(mut plugin) = plugin.lock() else {
+                error!("couldn't lock a plugin on topic {topic}",);
+                continue;
+            };
             let Ok(res) = plugin.run(&message) else {
                 warn!("error running plugin");
                 continue;
@@ -66,9 +78,6 @@ impl Router {
             println!(">> {res:?}");
         }
     }
-    // TODO: route function that takes a message and figures out which plugin to send it to
-    // TODO: a run function that takes the link_rx, pulls messages from it, asks the route
-    // where it should go, then spawns a new tokio task to handle that plugin
 }
 
 impl Default for Router {
@@ -89,7 +98,7 @@ mod tests {
 
         // TODO: yes this is terrible
         let path = PathBuf::from("../double_plugin.wasm");
-        let plugin = Plugin::new(path, "/intopic", "/outtopic").unwrap();
+        let plugin = Plugin::new(path, "test-plugin", "/intopic", "/outtopic").unwrap();
 
         router.add(Box::new(plugin));
         assert_eq!(1, router.plugins.len());
