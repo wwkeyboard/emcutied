@@ -47,8 +47,7 @@ impl Plugin {
         self.plugin.call(PLUGIN_FUNCTION, message).and_then(|r| {
             // the result is owned by the plugin, this copies it
             // into new memory
-            let mut v = Vec::new();
-            v.copy_from_slice(r);
+            let v = Vec::from(r);
             Ok(v)
         })
     }
