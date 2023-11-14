@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 use std::sync::Mutex;
 
-use crate::plugin::Plugin;
+use crate::{plugin::Plugin, rumqttd::Link};
+
 use log::{error, trace, warn};
-use rumqttd::local::LinkRx;
 
 /// Router
 pub struct Router {
@@ -33,9 +33,9 @@ impl Router {
         ps.push(Mutex::new(plugin));
     }
 
-    pub fn run(self, mut link_rx: LinkRx) -> ! {
+    pub fn run(self, mut link: Link) -> ! {
         loop {
-            let notification = match link_rx.recv().unwrap() {
+            let notification = match link.link_rx.recv().unwrap() {
                 Some(v) => v,
                 None => todo!(),
             };
@@ -43,39 +43,39 @@ impl Router {
             match notification {
                 rumqttd::Notification::Forward(message) => {
                     trace!("received message on {:?}", message.publish.topic);
+
                     let Ok(topic) = std::str::from_utf8(&message.publish.topic) else {
-                        error!("couldn't parse topic from message");
+                        error!("couldn't parse topic from message ");
                         continue;
                     };
 
                     let Ok(payload) = std::str::from_utf8(&message.publish.payload) else {
-                        error!("we only handle utf8 JSON payloads");
+                        error!("couldn't parse payload from message");
                         continue;
                     };
 
-                    self.route(topic.to_owned(), payload.to_owned())
+                    println!("have plugins {:?}", self.plugins.keys());
+
+                    if let Some(plugins) = self.plugins.get(topic) {
+                        for plugin in plugins {
+                            if let Ok(mut plugin) = plugin.lock() {
+                                trace!("calling plugin {}", plugin.name);
+                                if let Ok(result) = plugin.run(payload) {
+                                    trace!("sending result {:?}", result);
+                                    if let Err(e) =
+                                        link.link_tx.publish(plugin.out_topic.to_owned(), result)
+                                    {
+                                        error!("error sending result {:?}", e);
+                                    };
+                                }
+                            }
+                        }
+                    };
                 }
                 v => {
                     warn!("unhandled message {v:?}");
                 }
             }
-        }
-    }
-
-    fn route(&self, topic: String, message: String) {
-        let Some(plugins) = self.plugins.get(&topic) else {
-            return;
-        };
-        for plugin in plugins {
-            let Ok(mut plugin) = plugin.lock() else {
-                error!("couldn't lock a plugin on topic {topic}",);
-                continue;
-            };
-            let Ok(res) = plugin.run(&message) else {
-                warn!("error running plugin");
-                continue;
-            };
-            println!(">> {res:?}");
         }
     }
 }

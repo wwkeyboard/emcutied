@@ -35,9 +35,9 @@ async fn main() -> Result<()> {
     for plugin_config in main_config.plugins {
         let plugin = Plugin::new(
             plugin_config.file,
+            plugin_config.name.as_str(),
             plugin_config.in_topic.as_str(),
             plugin_config.out_topic.as_str(),
-            plugin_config.name.as_str(),
         )?;
 
         router.add(Box::new(plugin));
@@ -46,5 +46,5 @@ async fn main() -> Result<()> {
     // Now that the plugins are started this consumes mqttd and starts the server
     mqttd.start();
 
-    router.run(plugin_node.link_rx);
+    router.run(plugin_node);
 }

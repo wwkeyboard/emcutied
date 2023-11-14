@@ -43,48 +43,15 @@ impl Plugin {
         extism::Plugin::create(wasm, [], false)
     }
 
-    pub fn run(&mut self, message: &str) -> Result<()> {
-        let _res = self.plugin.call(PLUGIN_FUNCTION, message)?;
-        Ok(())
+    pub fn run(&mut self, message: &str) -> Result<Vec<u8>> {
+        self.plugin.call(PLUGIN_FUNCTION, message).and_then(|r| {
+            // the result is owned by the plugin, this copies it
+            // into new memory
+            let mut v = Vec::new();
+            v.copy_from_slice(r);
+            Ok(v)
+        })
     }
-
-    // TODO: pull this out into a router that listens to everything and
-    // dispatches to the correct plugin.
-    // pub async fn run(mut self) -> Result<()> {
-    //     info!(
-    //         "Starting plugin: {}",
-    //         self.file.to_str().unwrap_or("unknown")
-    //     );
-    //     self.links.link_tx.subscribe(self.in_topic);
-    //
-    //     loop {
-    //         let notification = match self.links.link_rx.recv()? {
-    //             Some(v) => v,
-    //             None => return Ok(()), // all senders have been dropped inside rumqttd
-    //         };
-    //
-    //         match notification {
-    //             Notification::Forward(forward) => {
-    //                 let payload: Vec<u8> = forward.publish.payload.to_vec();
-    //                 debug!(
-    //                     ">>> Topic = {:?}, Payload = {}",
-    //                     forward.publish.topic,
-    //                     String::from_utf8(payload.clone())
-    //                         .unwrap_or("<<not printable>>".to_owned())
-    //                 );
-    //
-    //                 let res: Vec<u8> = self.plugin.call(PLUGIN_FUNCTION, payload)?.into();
-    //
-    //                 self.plugin.cancel_handle().cancel();
-    //
-    //                 trace!("-- result {:?}", &res);
-    //             }
-    //             v => {
-    //                 trace!("plugin only handles forward notifications: {v:?}");
-    //             }
-    //         }
-    //     }
-    // }
 }
 
 pub async fn start_plugin<'a>(
