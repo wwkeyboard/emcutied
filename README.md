@@ -14,3 +14,31 @@ The resulting wasm will be in the project's root `target/wasm32-unknown-unknown/
     cd server
     cargo run -- -p ../target/wasm32-unknown-unknown/release/double_plugin.wasm
 
+# Architecture 
+
+```
+                  ┌──────────────┐
+                  │              │
+        ┌─────────┤ PluginConfig ├────────┐
+        │         │              │        │
+        │         └──────────────┘        │
+        │                                 │
+        │                                 │
+        │                                 │
+┌───────▼────────┐                 ┌──────▼────────┐
+│                ├────────────────►│               │
+│ rumqttd broker │  LinkTx/LinkRx  │ Plugin Router │
+│                │◄────────────────┤               │
+└────────────────┘                 └┬──────────────┘
+                                    │             ▲
+                                    │             │
+                                    │  ┌────────┐ │
+                                    │  │ Plugin │ │
+                                    │  ├────────┤ │
+                                    └─►│ Plugin ├─┘
+                                       ├────────┤
+                                       │ Plugin │
+                                       ├────────┤
+                                       │ Plugin │
+                                       └────────┘
+```
