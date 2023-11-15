@@ -2,7 +2,7 @@ use extism_pdk::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize)]
-struct InData {
+struct Payload {
     data: f64,
 }
 
@@ -12,9 +12,9 @@ pub fn handle(input: String) -> FnResult<String> {
 }
 
 fn run_handle(input: String) -> FnResult<String> {
-    let data: InData = serde_json::from_str(&input).unwrap();
+    let data: Payload = serde_json::from_str(&input).unwrap();
 
-    let payload = InData {
+    let payload = Payload {
         data: data.data * 2.0,
     };
 

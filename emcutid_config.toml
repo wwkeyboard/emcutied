@@ -5,9 +5,3 @@ name = "doubler"
 file = "./double_plugin.wasm"
 in_topic = "demo/doubler"
 out_topic = "demo/doubled"
-
-[[plugins]]
-name = "other-doubler"
-file = "./double_plugin.wasm"
-in_topic = "demo/doubler"
-out_topic = "demo/doubled"
