@@ -11,8 +11,9 @@ The resulting wasm will be in the project's root `target/wasm32-unknown-unknown/
 
 # Running the broker
 
-    cd server
-    cargo run -- -p ../target/wasm32-unknown-unknown/release/double_plugin.wasm
+rumqttd and wasmtime can be very noisy, often to the point of needing to limit logging to only the module you're concerned with.
+
+    RUST_LOG="server::router=trace" cargo run -- -c ./emcutid_config.toml
 
 # Architecture 
 
