@@ -34,6 +34,8 @@ fn main() {
         client.subscribe(topic, QoS::AtMostOnce).unwrap();
     }
 
+    client.subscribe("#", QoS::ExactlyOnce).unwrap();
+
     client
         .publish(
             cli.publish_topic,

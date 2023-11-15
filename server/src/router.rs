@@ -54,8 +54,6 @@ impl Router {
                         continue;
                     };
 
-                    println!("have plugins {:?}", self.plugins.keys());
-
                     if let Some(plugins) = self.plugins.get(topic) {
                         for plugin in plugins {
                             if let Ok(mut plugin) = plugin.lock() {
