@@ -1,11 +1,7 @@
 use std::path::PathBuf;
 
 use anyhow::{Context, Result};
-use log::{debug, info, trace};
-use rumqttd::{
-    local::{LinkRx, LinkTx},
-    Notification,
-};
+use log::info;
 
 const PLUGIN_FUNCTION: &str = "handle";
 
@@ -44,55 +40,10 @@ impl Plugin {
     }
 
     pub fn run(&mut self, message: &str) -> Result<Vec<u8>> {
-        self.plugin.call(PLUGIN_FUNCTION, message).and_then(|r| {
+        self.plugin.call(PLUGIN_FUNCTION, message).map(|r| {
             // the result is owned by the plugin, this copies it
             // into new memory
-            let v = Vec::from(r);
-            Ok(v)
+            Vec::from(r)
         })
-    }
-}
-
-pub async fn start_plugin<'a>(
-    mut plugin: Plugin,
-    mut link_tx: LinkTx,
-    mut link_rx: LinkRx,
-    _out_topic: String,
-) -> Result<()> {
-    info!("Starting plugin ---------------------");
-
-    // This looks a little wonkey, but you have to send the subscription message on the tx link,
-    // not the rx link.
-    link_tx.subscribe("doubler").unwrap();
-
-    let mut count = 0;
-
-    loop {
-        let notification = match link_rx.recv().unwrap() {
-            Some(v) => v,
-            None => return Ok(()),
-        };
-
-        match notification {
-            Notification::Forward(forward) => {
-                count += 1;
-                debug!(
-                    ">>> Topic = {:?}, Count = {}, Payload = {} bytes",
-                    forward.publish.topic,
-                    count,
-                    forward.publish.payload.len()
-                );
-
-                let payload: Vec<u8> = forward.publish.payload.to_vec();
-                let res: Vec<u8> = plugin.plugin.call(PLUGIN_FUNCTION, payload)?.into();
-
-                plugin.plugin.cancel_handle().cancel();
-
-                trace!("-- result {:?}", &res);
-            }
-            v => {
-                trace!("plugin only handles forward notifications: {v:?}");
-            }
-        }
     }
 }
