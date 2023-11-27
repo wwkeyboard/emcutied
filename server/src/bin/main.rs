@@ -2,7 +2,6 @@ use anyhow::Result;
 use clap::Parser;
 use log::info;
 use server::config::PluginConfig;
-use server::plugin::Plugin;
 use server::router::Router;
 use server::rumqttd::Rumqttd;
 
@@ -32,17 +31,7 @@ async fn main() -> Result<()> {
     let mut router = Router::new();
 
     info!("-- start plugins");
-    // TODO: pull this into the plugin module
-    for plugin_config in main_config.plugins {
-        let plugin = Plugin::new(
-            plugin_config.file,
-            plugin_config.name.as_str(),
-            plugin_config.in_topic.as_str(),
-            plugin_config.out_topic.as_str(),
-        )?;
-
-        router.add(Box::new(plugin));
-    }
+    router.add_new_plugins(main_config.plugins)?;
 
     // Now that the plugins are started this consumes mqttd and starts the server
     mqttd.start();

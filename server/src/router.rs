@@ -1,7 +1,10 @@
 use std::collections::HashMap;
 use std::sync::Mutex;
 
-use crate::{plugin::Plugin, rumqttd::Link};
+use crate::config;
+use crate::plugin::Plugin;
+use crate::rumqttd::Link;
+use anyhow::Result;
 
 use log::{error, trace, warn};
 
@@ -17,6 +20,20 @@ impl Router {
         Router {
             plugins: HashMap::new(),
         }
+    }
+
+    pub fn add_new_plugins(&mut self, plugins: Vec<config::Plugin>) -> Result<()> {
+        for plugin_config in plugins {
+            let plugin = Plugin::new(
+                plugin_config.file,
+                plugin_config.name.as_str(),
+                plugin_config.in_topic.as_str(),
+                plugin_config.out_topic.as_str(),
+            )?;
+
+            self.add(Box::new(plugin));
+        }
+        Ok(())
     }
 
     pub fn add(&mut self, plugin: Box<Plugin>) {
