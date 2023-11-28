@@ -33,7 +33,9 @@ async fn main() -> Result<()> {
     info!("-- start plugins");
     router.add_new_plugins(main_config.plugins)?;
 
-    // Now that the plugins are started this consumes mqttd and starts the server
+    // Now that the plugins are started this consumes mqttd and starts the server. This starts a
+    // bunch of threads, and _then_ kicks off tokio to handle requests. `start()` pushes all of
+    // that to yet another thread, and that thread just sits there waiting for tokio to finish.
     mqttd.start();
 
     router.run(plugin_node);

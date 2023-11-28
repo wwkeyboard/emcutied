@@ -7,6 +7,7 @@ use crate::rumqttd::Link;
 use anyhow::Result;
 
 use log::{error, trace, warn};
+use rumqttd::protocol::Publish;
 
 /// Router
 pub struct Router {
