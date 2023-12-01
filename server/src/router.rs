@@ -50,6 +50,13 @@ impl Router {
         ps.push(Mutex::new(plugin));
     }
 
+    /// Main run loop for the router. Wait for a notification from the given
+    /// link, then extract a message from it, look for any plugins that would
+    /// handle that message, and then call them.
+    ///
+    /// # Arguments
+    ///
+    /// * `link` - The link to listen for notifications and send responses on.
     pub fn run(self, mut link: Link) -> ! {
         loop {
             let notification = match link.link_rx.recv().unwrap() {
@@ -72,24 +79,43 @@ impl Router {
                     };
 
                     if let Some(plugins) = self.plugins.get(topic) {
-                        for plugin in plugins {
-                            if let Ok(mut plugin) = plugin.lock() {
-                                trace!("calling plugin {}", plugin.name);
-                                if let Ok(result) = plugin.run(payload) {
-                                    trace!("sending result {:?}", result);
-                                    if let Err(e) =
-                                        link.link_tx.publish(plugin.out_topic.to_owned(), result)
-                                    {
-                                        error!("error sending result {:?}", e);
-                                    };
-                                }
-                            }
-                        }
+                        call_plugins(plugins, payload, &mut link);
                     };
                 }
                 v => {
                     warn!("unhandled message {v:?}");
                 }
+            }
+        }
+    }
+}
+
+/// Calls each of the given plugins with the given payload and sends any response on the link.
+///
+/// # Arguments
+///
+/// * `plugins` - The plugins to call.
+/// * `payload` - The payload to pass to the plugins.
+/// * `link` - The Link to respond on.
+///
+/// # Example
+///
+/// ```
+/// let plugins = vec![Mutex::new(Box::new(plugin))];
+/// let payload = "example payload";
+/// let mut link = Link::new();
+///
+/// call_plugins(&plugins, payload, &mut link);
+/// ```
+fn call_plugins(plugins: &Vec<Mutex<Box<Plugin>>>, payload: &str, link: &mut Link) {
+    for plugin in plugins {
+        if let Ok(mut plugin) = plugin.lock() {
+            trace!("calling plugin {}", plugin.name);
+            if let Ok(result) = plugin.run(payload) {
+                trace!("sending result {:?}", result);
+                if let Err(e) = link.link_tx.publish(plugin.out_topic.to_owned(), result) {
+                    error!("error sending result {:?}", e);
+                };
             }
         }
     }
@@ -118,7 +144,4 @@ mod tests {
         router.add(Box::new(plugin));
         assert_eq!(1, router.plugins.len());
     }
-
-    #[test]
-    fn add_appends_to_existing_vec() {}
 }
